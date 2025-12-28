@@ -2,8 +2,8 @@
 
 Controls:
 
-Movement: W A S D
-Jump: Spacebar
+Movement: W A S D <br>
+Jump: Spacebar <br>
 
-Gravity Preview: Arrow Keys
-Gravity Switch: Enter
+Gravity Preview: Arrow Keys <br>
+Gravity Switch: Enter <br>
