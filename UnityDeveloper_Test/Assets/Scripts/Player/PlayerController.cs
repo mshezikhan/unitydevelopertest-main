@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    // References
     private Rigidbody _rb;
     private Animator _animator;
     private PlayerActions _actions;
@@ -17,18 +16,24 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Transform hologramPivot;
     [SerializeField] float rotateAngle = 90f;
 
-    // Input / State
+    [Header("Fall Detection")]
+    [SerializeField] float fallGraceTime = 4f; // it separates jump and fall logics
+
+    private float fallTimer; // increases while player is falling
+
+    // Input
     private Vector2 moveInput;
     private Vector2 rotateInput;
     private Vector2 lastRotateInput;
 
+    // States
     private bool jumpPressed;
     private bool gravitySwitchPressed;
     private bool isGrounded;
-    private float gravitySwitchCooldown = 0.2f;
+    private float gravitySwitchCooldown = 0.2f; // prevents unneccary buttun press
     private float lastGravitySwitchTime;
 
-    // Gravity
+    // gravity
     private Vector3 gravityDir = Vector3.down;
     private Vector3 pendingGravityDir = Vector3.down;
     private Vector3 moveDirection;
@@ -39,7 +44,7 @@ public class PlayerController : MonoBehaviour
         _animator = GetComponent<Animator>();
         _actions = new PlayerActions();
 
-        _rb.useGravity = false;
+        _rb.useGravity = false; // we make force pretend like gravity
     }
 
     private void OnEnable()
@@ -54,6 +59,7 @@ public class PlayerController : MonoBehaviour
         ReadRotationInput();
         SwitchGravity();
         UpdateAnimator();
+        CheckFalling();
     }
 
     private void FixedUpdate()
@@ -64,9 +70,8 @@ public class PlayerController : MonoBehaviour
         RotateTowardsMovement();
     }
 
-    // ----------------------------------
-    // INPUT (PLAYER-LOCAL DIRECTIONS)
-    // ----------------------------------
+
+    // read player input
     private void ReadInput()
     {
         moveInput = _actions.Movement.Move.ReadValue<Vector2>();
@@ -76,19 +81,19 @@ public class PlayerController : MonoBehaviour
 
         Vector3 gravityUp = -gravityDir;
 
-        // Player-facing forward projected onto surface
+        // it make player able to walk on walls 
         Vector3 forward =
             Vector3.ProjectOnPlane(transform.forward, gravityDir).normalized;
 
-        // SAFETY: fallback if forward collapses
-        if (forward.sqrMagnitude < 0.001f)
+/*        // SAFETY: fallback if forward collapses
+        if (forward.sqrMagnitude < 0.001f) 
         {
             Vector3 fallback = Vector3.forward;
             if (Mathf.Abs(Vector3.Dot(fallback, gravityUp)) > 0.9f)
                 fallback = Vector3.right;
 
             forward = Vector3.ProjectOnPlane(fallback, gravityDir).normalized;
-        }
+        }*/
 
         Vector3 right = Vector3.Cross(gravityUp, forward).normalized;
 
@@ -99,9 +104,7 @@ public class PlayerController : MonoBehaviour
 
 
 
-    // ----------------------------------
-    // MOVEMENT
-    // ----------------------------------
+    // player movement
     private void Move()
     {
         if (moveDirection.sqrMagnitude < 0.01f) return;
@@ -134,9 +137,7 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    // ----------------------------------
-    // GRAVITY
-    // ----------------------------------
+    // gravity
     private void ApplyCustomGravity()
     {
         _rb.AddForce(gravityDir * customGravityStrength, ForceMode.Acceleration);
@@ -150,28 +151,20 @@ public class PlayerController : MonoBehaviour
 
         if (Vector3.Dot(gravityDir.normalized, newGravity) > 0.99f) return; // Same direction, skip switch
 
-        // STEP 1: push player slightly away from the surface
+        // 1 push player to prevent going under plane
         transform.position += newGravity * 1.8f;
 
-        // STEP 2: switch gravity
+        // 2 switch gravity
         gravityDir = newGravity;
 
-        // STEP 3: rotate player to align with new gravity
+        // 3 rotate player to align with new gravity
         transform.rotation = Quaternion.FromToRotation(transform.up, -gravityDir) * transform.rotation;
-
-        /*        Vector3 forward =
-                    Vector3.ProjectOnPlane(transform.forward, gravityDir).normalized;
-
-                transform.rotation =
-                    Quaternion.LookRotation(forward, -gravityDir);*/
 
         lastGravitySwitchTime = Time.time;
         hologramPivot.gameObject.SetActive(false);
     }
 
-    // ----------------------------------
-    // JUMP
-    // ----------------------------------
+    // player jump
     private void HandleJump()
     {
         if (!jumpPressed || !isGrounded) return;
@@ -196,9 +189,7 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    // ----------------------------------
-    // HOLOGRAM (Arrow Keys)
-    // ----------------------------------
+    // holographic preview for gravity
     private void ReadRotationInput()
     {
         if (rotateInput == lastRotateInput) return;
@@ -206,7 +197,7 @@ public class PlayerController : MonoBehaviour
         if (rotateInput == Vector2.zero)
         {
             lastRotateInput = Vector2.zero;
-            // hologramPivot.gameObject.SetActive(false); (hides instantly)
+            // hologramPivot.gameObject.SetActive(false); (it auto hides it after few seconds)
             return;
         }
 
@@ -236,19 +227,51 @@ public class PlayerController : MonoBehaviour
         euler.z = Mathf.Clamp(euler.z, 0f, 360f);
         hologramPivot.localEulerAngles = euler;
 
-        // Feet direction = -up
         pendingGravityDir = -hologramPivot.up;
     }
 
-    // ----------------------------------
-    // ANIMATION
-    // ----------------------------------
+    // player animation
     private void UpdateAnimator()
     {
         if (!_animator) return;
 
         _animator.SetFloat("Speed", moveDirection.magnitude);
         _animator.SetBool("Grounded", isGrounded);
+    }
+
+    // check if player is falling
+    private void CheckFalling()
+    {
+        // velocity in gravity direction
+        float gravityVelocity = Vector3.Dot(_rb.velocity, gravityDir);
+
+        bool isActuallyFalling =
+            !isGrounded &&
+            gravityVelocity > 0.5f; // moving with gravity
+
+        if (isActuallyFalling)
+        {
+            fallTimer += Time.deltaTime; // increase timer
+
+            if (fallTimer >= fallGraceTime) // detect if its jump or fall
+            {
+                GameManager.Instance.GameOver();
+            }
+        }
+        else
+        {
+            fallTimer = 0f; // reset falling timer
+        }
+    }
+
+    // cube collection
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Cube"))
+        {
+            GameManager.Instance.CollectCube();
+            Destroy(collision.gameObject);
+        }
     }
 
     private void OnDisable()
