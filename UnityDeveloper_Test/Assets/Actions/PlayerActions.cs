@@ -161,6 +161,78 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
             ]
         },
         {
+            ""name"": ""Holo"",
+            ""id"": ""768f6b17-3e98-408a-8fd7-472d47936dd1"",
+            ""actions"": [
+                {
+                    ""name"": ""Rot"",
+                    ""type"": ""Value"",
+                    ""id"": ""bfb4ba5e-3f37-45c4-b79e-514f20d8a79f"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": ""2D Vector"",
+                    ""id"": ""92e09541-77b7-4cf4-be8b-001309d96f81"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rot"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""e9ec293f-11f9-4c0f-b246-deed0ae5c359"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rot"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""f3fec44b-0404-46a1-8dcf-5efc1b4e2ac7"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rot"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""22ffe54f-ac3e-472d-a2f2-a1afe90e5aa5"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rot"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""71ca4589-6afa-4aab-9a18-ce7a249e026d"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rot"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                }
+            ]
+        },
+        {
             ""name"": ""Jump"",
             ""id"": ""00929b0a-dfd7-4e6c-95f3-d3ef70703326"",
             ""actions"": [
@@ -187,6 +259,34 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Gravity"",
+            ""id"": ""0a6a116e-fb4c-4eef-9b7b-ec2f4f3c5206"",
+            ""actions"": [
+                {
+                    ""name"": ""GravitySwitch"",
+                    ""type"": ""Button"",
+                    ""id"": ""fe87af44-efe7-461b-bdbf-ca71e95e8a7e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""15c0fd54-fbf8-4939-a47b-5602f6efe5b1"",
+                    ""path"": ""<Keyboard>/enter"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""GravitySwitch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -194,15 +294,23 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
         // Movement
         m_Movement = asset.FindActionMap("Movement", throwIfNotFound: true);
         m_Movement_Move = m_Movement.FindAction("Move", throwIfNotFound: true);
+        // Holo
+        m_Holo = asset.FindActionMap("Holo", throwIfNotFound: true);
+        m_Holo_Rot = m_Holo.FindAction("Rot", throwIfNotFound: true);
         // Jump
         m_Jump = asset.FindActionMap("Jump", throwIfNotFound: true);
         m_Jump_PlayerJump = m_Jump.FindAction("PlayerJump", throwIfNotFound: true);
+        // Gravity
+        m_Gravity = asset.FindActionMap("Gravity", throwIfNotFound: true);
+        m_Gravity_GravitySwitch = m_Gravity.FindAction("GravitySwitch", throwIfNotFound: true);
     }
 
     ~@PlayerActions()
     {
         UnityEngine.Debug.Assert(!m_Movement.enabled, "This will cause a leak and performance issues, PlayerActions.Movement.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Holo.enabled, "This will cause a leak and performance issues, PlayerActions.Holo.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_Jump.enabled, "This will cause a leak and performance issues, PlayerActions.Jump.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Gravity.enabled, "This will cause a leak and performance issues, PlayerActions.Gravity.Disable() has not been called.");
     }
 
     /// <summary>
@@ -371,6 +479,102 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
     /// </summary>
     public MovementActions @Movement => new MovementActions(this);
 
+    // Holo
+    private readonly InputActionMap m_Holo;
+    private List<IHoloActions> m_HoloActionsCallbackInterfaces = new List<IHoloActions>();
+    private readonly InputAction m_Holo_Rot;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Holo".
+    /// </summary>
+    public struct HoloActions
+    {
+        private @PlayerActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public HoloActions(@PlayerActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Holo/Rot".
+        /// </summary>
+        public InputAction @Rot => m_Wrapper.m_Holo_Rot;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Holo; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="HoloActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(HoloActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="HoloActions" />
+        public void AddCallbacks(IHoloActions instance)
+        {
+            if (instance == null || m_Wrapper.m_HoloActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_HoloActionsCallbackInterfaces.Add(instance);
+            @Rot.started += instance.OnRot;
+            @Rot.performed += instance.OnRot;
+            @Rot.canceled += instance.OnRot;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="HoloActions" />
+        private void UnregisterCallbacks(IHoloActions instance)
+        {
+            @Rot.started -= instance.OnRot;
+            @Rot.performed -= instance.OnRot;
+            @Rot.canceled -= instance.OnRot;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="HoloActions.UnregisterCallbacks(IHoloActions)" />.
+        /// </summary>
+        /// <seealso cref="HoloActions.UnregisterCallbacks(IHoloActions)" />
+        public void RemoveCallbacks(IHoloActions instance)
+        {
+            if (m_Wrapper.m_HoloActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="HoloActions.AddCallbacks(IHoloActions)" />
+        /// <seealso cref="HoloActions.RemoveCallbacks(IHoloActions)" />
+        /// <seealso cref="HoloActions.UnregisterCallbacks(IHoloActions)" />
+        public void SetCallbacks(IHoloActions instance)
+        {
+            foreach (var item in m_Wrapper.m_HoloActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_HoloActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="HoloActions" /> instance referencing this action map.
+    /// </summary>
+    public HoloActions @Holo => new HoloActions(this);
+
     // Jump
     private readonly InputActionMap m_Jump;
     private List<IJumpActions> m_JumpActionsCallbackInterfaces = new List<IJumpActions>();
@@ -466,6 +670,102 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="JumpActions" /> instance referencing this action map.
     /// </summary>
     public JumpActions @Jump => new JumpActions(this);
+
+    // Gravity
+    private readonly InputActionMap m_Gravity;
+    private List<IGravityActions> m_GravityActionsCallbackInterfaces = new List<IGravityActions>();
+    private readonly InputAction m_Gravity_GravitySwitch;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Gravity".
+    /// </summary>
+    public struct GravityActions
+    {
+        private @PlayerActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public GravityActions(@PlayerActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Gravity/GravitySwitch".
+        /// </summary>
+        public InputAction @GravitySwitch => m_Wrapper.m_Gravity_GravitySwitch;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Gravity; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="GravityActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(GravityActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="GravityActions" />
+        public void AddCallbacks(IGravityActions instance)
+        {
+            if (instance == null || m_Wrapper.m_GravityActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_GravityActionsCallbackInterfaces.Add(instance);
+            @GravitySwitch.started += instance.OnGravitySwitch;
+            @GravitySwitch.performed += instance.OnGravitySwitch;
+            @GravitySwitch.canceled += instance.OnGravitySwitch;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="GravityActions" />
+        private void UnregisterCallbacks(IGravityActions instance)
+        {
+            @GravitySwitch.started -= instance.OnGravitySwitch;
+            @GravitySwitch.performed -= instance.OnGravitySwitch;
+            @GravitySwitch.canceled -= instance.OnGravitySwitch;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="GravityActions.UnregisterCallbacks(IGravityActions)" />.
+        /// </summary>
+        /// <seealso cref="GravityActions.UnregisterCallbacks(IGravityActions)" />
+        public void RemoveCallbacks(IGravityActions instance)
+        {
+            if (m_Wrapper.m_GravityActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="GravityActions.AddCallbacks(IGravityActions)" />
+        /// <seealso cref="GravityActions.RemoveCallbacks(IGravityActions)" />
+        /// <seealso cref="GravityActions.UnregisterCallbacks(IGravityActions)" />
+        public void SetCallbacks(IGravityActions instance)
+        {
+            foreach (var item in m_Wrapper.m_GravityActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_GravityActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="GravityActions" /> instance referencing this action map.
+    /// </summary>
+    public GravityActions @Gravity => new GravityActions(this);
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Movement" which allows adding and removing callbacks.
     /// </summary>
@@ -482,6 +782,21 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
         void OnMove(InputAction.CallbackContext context);
     }
     /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Holo" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="HoloActions.AddCallbacks(IHoloActions)" />
+    /// <seealso cref="HoloActions.RemoveCallbacks(IHoloActions)" />
+    public interface IHoloActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Rot" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRot(InputAction.CallbackContext context);
+    }
+    /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Jump" which allows adding and removing callbacks.
     /// </summary>
     /// <seealso cref="JumpActions.AddCallbacks(IJumpActions)" />
@@ -495,5 +810,20 @@ public partial class @PlayerActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPlayerJump(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Gravity" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="GravityActions.AddCallbacks(IGravityActions)" />
+    /// <seealso cref="GravityActions.RemoveCallbacks(IGravityActions)" />
+    public interface IGravityActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "GravitySwitch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnGravitySwitch(InputAction.CallbackContext context);
     }
 }

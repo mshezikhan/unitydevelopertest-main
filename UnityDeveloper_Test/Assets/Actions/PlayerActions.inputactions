@@ -75,6 +75,78 @@
             ]
         },
         {
+            "name": "Holo",
+            "id": "768f6b17-3e98-408a-8fd7-472d47936dd1",
+            "actions": [
+                {
+                    "name": "Rot",
+                    "type": "Value",
+                    "id": "bfb4ba5e-3f37-45c4-b79e-514f20d8a79f",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "2D Vector",
+                    "id": "92e09541-77b7-4cf4-be8b-001309d96f81",
+                    "path": "2DVector",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Rot",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "up",
+                    "id": "e9ec293f-11f9-4c0f-b246-deed0ae5c359",
+                    "path": "<Keyboard>/upArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Rot",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "f3fec44b-0404-46a1-8dcf-5efc1b4e2ac7",
+                    "path": "<Keyboard>/downArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Rot",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "22ffe54f-ac3e-472d-a2f2-a1afe90e5aa5",
+                    "path": "<Keyboard>/leftArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Rot",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "right",
+                    "id": "71ca4589-6afa-4aab-9a18-ce7a249e026d",
+                    "path": "<Keyboard>/rightArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Rot",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                }
+            ]
+        },
+        {
             "name": "Jump",
             "id": "00929b0a-dfd7-4e6c-95f3-d3ef70703326",
             "actions": [
@@ -97,6 +169,34 @@
                     "processors": "",
                     "groups": "",
                     "action": "PlayerJump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Gravity",
+            "id": "0a6a116e-fb4c-4eef-9b7b-ec2f4f3c5206",
+            "actions": [
+                {
+                    "name": "GravitySwitch",
+                    "type": "Button",
+                    "id": "fe87af44-efe7-461b-bdbf-ca71e95e8a7e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "15c0fd54-fbf8-4939-a47b-5602f6efe5b1",
+                    "path": "<Keyboard>/enter",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "GravitySwitch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

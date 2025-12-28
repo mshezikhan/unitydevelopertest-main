@@ -1,103 +1,111 @@
-using System;
 using UnityEngine;
-using UnityEngine.EventSystems;
-
 
 public class PlayerController : MonoBehaviour
 {
-    // Reference
+    // References
     private Rigidbody _rb;
     private Animator _animator;
     private PlayerActions _actions;
 
-    [Header("Config")]
+    [Header("Player Config")]
     [SerializeField] float moveSpeed = 5f;
-    [SerializeField] float jumpForce = 5f;
+    [SerializeField] float jumpForce = 6f;
+    [SerializeField] float customGravityStrength = 20f;
+    [SerializeField] Transform cameraTransform;
 
-    // States
+    [Header("Hologram Config")]
+    [SerializeField] Transform hologramPivot;
+    [SerializeField] float rotateAngle = 90f;
+
+    // Input / State
     private Vector2 moveInput;
-    private Vector3 moveDirection;
+    private Vector2 rotateInput;
+    private Vector2 lastRotateInput;
+
     private bool jumpPressed;
+    private bool gravitySwitchPressed;
     private bool isGrounded;
 
+    // Custom gravity
+    private Vector3 gravityDir = Vector3.down;
+    private Vector3 pendingGravityDir = Vector3.down;
 
-    // Pick all components from Player object using GetComponent<>();
+    private Vector3 moveDirection;
+
     private void Awake()
     {
-        // Make sure all of these attached to Player object via inspector.
         _rb = GetComponent<Rigidbody>();
         _animator = GetComponent<Animator>();
-        _actions = new PlayerActions(); // Create a new instance of PlayerActions and use that
+        _actions = new PlayerActions();
+
+        // IMPORTANT: disable Unity gravity
+        _rb.useGravity = false;
     }
 
-    // Enable Inputs when player object loads.
     private void OnEnable()
     {
         _actions.Enable();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        ReadMovement();
+        ReadInput();
         RotateTowardsMovement();
-        UpdateGroundedState();
         HandleJump();
         UpdateAnimator();
+        ReadRotationInput();
+        SwitchGravity();
     }
-
 
     private void FixedUpdate()
     {
+        ApplyCustomGravity();
         Move();
+        UpdateGroundedState();
     }
 
-    private void ReadMovement()
+    private void ReadInput()
     {
-        // Read WASD input and feed in Vector 2
         moveInput = _actions.Movement.Move.ReadValue<Vector2>();
-
-        // Get move direction from move input
-        moveDirection = new Vector3(moveInput.x, 0f, moveInput.y);
-
-        // Check for Jump button (SAPCEBAR)
+        rotateInput = _actions.Holo.Rot.ReadValue<Vector2>();
         jumpPressed = _actions.Jump.PlayerJump.triggered;
+        gravitySwitchPressed = _actions.Gravity.GravitySwitch.triggered;
 
+        Vector3 camForward = cameraTransform.forward;
+        Vector3 camRight = cameraTransform.right;
+
+        camForward.y = 0f;
+        camRight.y = 0f;
+
+        camForward.Normalize();
+        camRight.Normalize();
+
+        moveDirection = camForward * moveInput.y + camRight * moveInput.x;
     }
 
-    private bool IsPlayerMoving()
+    private void Move()
     {
-        if (moveDirection.sqrMagnitude < 0.01f) // Check if player is not moving
-            return true;
-        return false;
-    }
+        if (moveDirection.sqrMagnitude < 0.01f) return;
 
-
-    private void Move() 
-    {
-        if (IsPlayerMoving()) return;
-
-        moveDirection = moveDirection * -1; // Fixes reverse movements
-
-        Vector3 newPosition = // Prepare new pos with provided Speed
+        Vector3 newPos =
             _rb.position + moveDirection.normalized * moveSpeed * Time.fixedDeltaTime;
 
-        _rb.MovePosition(newPosition); // Apply new pos on RigidBody (it finally moves player to a position)
+        _rb.MovePosition(newPos);
     }
 
     private void RotateTowardsMovement()
-    {   // face the Move Direction
+    {
+        if (moveDirection.sqrMagnitude < 0.01f) return;
 
-        if (IsPlayerMoving()) return;
+        Quaternion targetRot =
+            Quaternion.LookRotation(moveDirection, -gravityDir);
 
-        Quaternion targetRotation = Quaternion.LookRotation(moveDirection *-1 , Vector3.up);
-        transform.rotation = targetRotation;
+        transform.rotation = targetRot;
     }
 
-    private void UpdateGroundedState()
+    private void ApplyCustomGravity()
     {
-        // TEMP grounded check based on _rb velocity
-        isGrounded = Mathf.Abs(_rb.velocity.y) < 0.05f;
+        _rb.AddForce(gravityDir * customGravityStrength, ForceMode.Acceleration);
     }
 
     private void HandleJump()
@@ -105,32 +113,77 @@ public class PlayerController : MonoBehaviour
         if (!jumpPressed) return;
         if (!isGrounded) return;
 
-        Vector3 velocity = _rb.velocity; // Fetch _rb velocity
-        velocity.y = 0f;              // Reset falling speed
-        _rb.velocity = velocity;  // Feed new velocity in _rb
+        Vector3 vel = _rb.velocity;
+        vel -= Vector3.Project(vel, gravityDir);
+        _rb.velocity = vel;
 
-        _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse); // Jump
-
-        isGrounded = false;   // lock jumping
-
-
+        _rb.AddForce(-gravityDir * jumpForce, ForceMode.Impulse);
     }
 
+    private void UpdateGroundedState()
+    {
+        isGrounded = Physics.Raycast(
+            transform.position,
+            gravityDir,
+            out _,
+            1.1f
+        );
+    }
 
     private void UpdateAnimator()
     {
-        // Feed values to the animator for aniamtions
-
-        // Feed speed value
-        float speed = moveDirection.magnitude;
-        _animator.SetFloat("Speed", speed);
-
-        // Feed jump bool
+        _animator.SetFloat("Speed", moveDirection.magnitude);
         _animator.SetBool("Grounded", isGrounded);
     }
 
+    private void ReadRotationInput()
+    {
+        if (rotateInput == lastRotateInput) return;
 
-    // Disable Inputs when player disables. (It prevents ghost inputs)
+        if (rotateInput == Vector2.zero)
+        {
+            lastRotateInput = Vector2.zero;
+            return;
+        }
+
+        lastRotateInput = rotateInput;
+
+        if (rotateInput.x > 0)
+            RotatePreview(Vector3.forward);
+        else if (rotateInput.x < 0)
+            RotatePreview(Vector3.back);
+        else if (rotateInput.y > 0)
+            RotatePreview(Vector3.right);
+        else if (rotateInput.y < 0)
+            RotatePreview(Vector3.left);
+    }
+
+    private void RotatePreview(Vector3 localAxis)
+    {
+        Vector3 pivot = hologramPivot.position;
+        Vector3 worldAxis = hologramPivot.TransformDirection(localAxis);
+
+        hologramPivot.RotateAround(pivot, worldAxis, rotateAngle);
+
+        Vector3 euler = hologramPivot.localEulerAngles;
+        euler.y = 0f;
+        hologramPivot.localEulerAngles = euler;
+
+        // feet direction = -up
+        pendingGravityDir = -hologramPivot.up;
+    }
+
+    private void SwitchGravity()
+    {
+        if (!gravitySwitchPressed) return;
+
+        gravityDir = pendingGravityDir.normalized;
+
+        // align player instantly to new gravity
+        transform.rotation =
+            Quaternion.FromToRotation(transform.up, -gravityDir) * transform.rotation;
+    }
+
     private void OnDisable()
     {
         _actions.Disable();
