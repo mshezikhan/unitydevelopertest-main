@@ -974,7 +974,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 71.15
+  field of view: 89.3
   orthographic: 0
   orthographic size: 10
   m_Depth: -1
@@ -1000,7 +1000,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: -1.3452214e-10, y: 0.99532557, z: -0.09657647, w: -0.0000000013863969}
+  m_LocalRotation: {x: -0.0000000025532214, y: 0.99654007, z: -0.083113946, w: -0.00000003061324}
   m_LocalPosition: {x: 0.988327, y: 2.73, z: 1.67}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2739,7 +2739,7 @@ MonoBehaviour:
   m_LookAt: {fileID: 0}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 71.15
+    FieldOfView: 89.3
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -4289,7 +4289,7 @@ MonoBehaviour:
   m_LookAt: {fileID: 0}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 71.15
+    FieldOfView: 89.3
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -4315,7 +4315,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1069373485}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0000000042220627, y: 0.9953243, z: -0.096589535, w: -0.000000043507008}
+  m_LocalRotation: {x: -0.0000000036330259, y: 0.99654007, z: -0.083113946, w: -0.00000004356015}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -4555,7 +4555,7 @@ MonoBehaviour:
   m_Follow: {fileID: 543450653259175915}
   m_CommonLens: 1
   m_Lens:
-    FieldOfView: 71.15
+    FieldOfView: 89.3
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -7761,7 +7761,7 @@ MonoBehaviour:
   m_LookAt: {fileID: 0}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 71.15
+    FieldOfView: 89.3
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -7787,7 +7787,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2084168771}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0000000026821085, y: 0.9981157, z: -0.06135949, w: -0.000000043629022}
+  m_LocalRotation: {x: -0.0000000015258039, y: 0.9993906, z: -0.034906324, w: -0.00000004368475}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -8291,12 +8291,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  jumpForce: 5
+  jumpForce: 8
   customGravityStrength: 20
-  mainCamera: {fileID: 330585543}
+  rotationSpeed: 10
   hologramPivot: {fileID: 1355504518}
   rotateAngle: 90
-  gravityDir: {x: 0, y: -1, z: 0}
 --- !u!136 &919132149603880276
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -8329,7 +8328,7 @@ Rigidbody:
   m_GameObject: {fileID: 919132149603880273}
   serializedVersion: 4
   m_Mass: 1
-  m_Drag: 0
+  m_Drag: 0.5
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
@@ -8345,7 +8344,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 112
+  m_Constraints: 80
   m_CollisionDetection: 0
 --- !u!1 &927016744737343624
 GameObject:

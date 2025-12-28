@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float jumpForce = 6f;
     [SerializeField] float customGravityStrength = 20f;
-    [SerializeField] Transform cameraTransform;
+    [SerializeField] float rotationSpeed = 10f;
 
     [Header("Hologram Config")]
     [SerializeField] Transform hologramPivot;
@@ -25,11 +25,12 @@ public class PlayerController : MonoBehaviour
     private bool jumpPressed;
     private bool gravitySwitchPressed;
     private bool isGrounded;
+    private float gravitySwitchCooldown = 0.2f;
+    private float lastGravitySwitchTime;
 
-    // Custom gravity
+    // Gravity
     private Vector3 gravityDir = Vector3.down;
     private Vector3 pendingGravityDir = Vector3.down;
-
     private Vector3 moveDirection;
 
     private void Awake()
@@ -38,7 +39,6 @@ public class PlayerController : MonoBehaviour
         _animator = GetComponent<Animator>();
         _actions = new PlayerActions();
 
-        // IMPORTANT: disable Unity gravity
         _rb.useGravity = false;
     }
 
@@ -50,11 +50,10 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         ReadInput();
-        RotateTowardsMovement();
         HandleJump();
-        UpdateAnimator();
         ReadRotationInput();
         SwitchGravity();
+        UpdateAnimator();
     }
 
     private void FixedUpdate()
@@ -62,8 +61,12 @@ public class PlayerController : MonoBehaviour
         ApplyCustomGravity();
         Move();
         UpdateGroundedState();
+        RotateTowardsMovement();
     }
 
+    // ----------------------------------
+    // INPUT (PLAYER-LOCAL DIRECTIONS)
+    // ----------------------------------
     private void ReadInput()
     {
         moveInput = _actions.Movement.Move.ReadValue<Vector2>();
@@ -71,47 +74,106 @@ public class PlayerController : MonoBehaviour
         jumpPressed = _actions.Jump.PlayerJump.triggered;
         gravitySwitchPressed = _actions.Gravity.GravitySwitch.triggered;
 
-        Vector3 camForward = cameraTransform.forward;
-        Vector3 camRight = cameraTransform.right;
+        Vector3 gravityUp = -gravityDir;
 
-        camForward.y = 0f;
-        camRight.y = 0f;
+        // Player-facing forward projected onto surface
+        Vector3 forward =
+            Vector3.ProjectOnPlane(transform.forward, gravityDir).normalized;
 
-        camForward.Normalize();
-        camRight.Normalize();
+        // SAFETY: fallback if forward collapses
+        if (forward.sqrMagnitude < 0.001f)
+        {
+            Vector3 fallback = Vector3.forward;
+            if (Mathf.Abs(Vector3.Dot(fallback, gravityUp)) > 0.9f)
+                fallback = Vector3.right;
 
-        moveDirection = camForward * moveInput.y + camRight * moveInput.x;
+            forward = Vector3.ProjectOnPlane(fallback, gravityDir).normalized;
+        }
+
+        Vector3 right = Vector3.Cross(gravityUp, forward).normalized;
+
+        moveDirection =
+            forward * moveInput.y +
+            right * moveInput.x;
     }
 
+
+
+    // ----------------------------------
+    // MOVEMENT
+    // ----------------------------------
     private void Move()
     {
         if (moveDirection.sqrMagnitude < 0.01f) return;
 
-        Vector3 newPos =
-            _rb.position + moveDirection.normalized * moveSpeed * Time.fixedDeltaTime;
-
+        Vector3 newPos = _rb.position + moveDirection * moveSpeed * Time.fixedDeltaTime;
         _rb.MovePosition(newPos);
     }
 
     private void RotateTowardsMovement()
     {
+        if (moveInput.y < 0f) return;
+
         if (moveDirection.sqrMagnitude < 0.01f) return;
+
+        // Determine how much input is forward vs strafe
+        float forwardAmount = Mathf.Abs(moveInput.y);
+        float strafeAmount = Mathf.Abs(moveInput.x);
+
+        float turnStrength =
+            Mathf.Lerp(0.3f, 1f, forwardAmount);
 
         Quaternion targetRot =
             Quaternion.LookRotation(moveDirection, -gravityDir);
 
-        transform.rotation = targetRot;
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRot,
+            turnStrength * rotationSpeed * Time.fixedDeltaTime
+        );
     }
 
+
+    // ----------------------------------
+    // GRAVITY
+    // ----------------------------------
     private void ApplyCustomGravity()
     {
         _rb.AddForce(gravityDir * customGravityStrength, ForceMode.Acceleration);
     }
 
+    private void SwitchGravity()
+    {
+        if (!gravitySwitchPressed || Time.time - lastGravitySwitchTime < gravitySwitchCooldown) return;
+
+        Vector3 newGravity = pendingGravityDir.normalized;
+
+        if (Vector3.Dot(gravityDir.normalized, newGravity) > 0.99f) return; // Same direction, skip switch
+
+        // STEP 1: push player slightly away from the surface
+        transform.position += newGravity * 1.8f;
+
+        // STEP 2: switch gravity
+        gravityDir = newGravity;
+
+        // STEP 3: rotate player to align with new gravity
+        transform.rotation = Quaternion.FromToRotation(transform.up, -gravityDir) * transform.rotation;
+
+        /*        Vector3 forward =
+                    Vector3.ProjectOnPlane(transform.forward, gravityDir).normalized;
+
+                transform.rotation =
+                    Quaternion.LookRotation(forward, -gravityDir);*/
+
+        lastGravitySwitchTime = Time.time;
+    }
+
+    // ----------------------------------
+    // JUMP
+    // ----------------------------------
     private void HandleJump()
     {
-        if (!jumpPressed) return;
-        if (!isGrounded) return;
+        if (!jumpPressed || !isGrounded) return;
 
         Vector3 vel = _rb.velocity;
         vel -= Vector3.Project(vel, gravityDir);
@@ -122,20 +184,20 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateGroundedState()
     {
+        Vector3 origin = transform.position + (-gravityDir * 0.5f);
+
         isGrounded = Physics.Raycast(
-            transform.position,
+            origin,
             gravityDir,
             out _,
-            1.1f
+            1.2f
         );
     }
 
-    private void UpdateAnimator()
-    {
-        _animator.SetFloat("Speed", moveDirection.magnitude);
-        _animator.SetBool("Grounded", isGrounded);
-    }
 
+    // ----------------------------------
+    // HOLOGRAM (Arrow Keys)
+    // ----------------------------------
     private void ReadRotationInput()
     {
         if (rotateInput == lastRotateInput) return;
@@ -167,21 +229,23 @@ public class PlayerController : MonoBehaviour
 
         Vector3 euler = hologramPivot.localEulerAngles;
         euler.y = 0f;
+        euler.x = Mathf.Clamp(euler.x, 0f, 360f);
+        euler.z = Mathf.Clamp(euler.z, 0f, 360f);
         hologramPivot.localEulerAngles = euler;
 
-        // feet direction = -up
+        // Feet direction = -up
         pendingGravityDir = -hologramPivot.up;
     }
 
-    private void SwitchGravity()
+    // ----------------------------------
+    // ANIMATION
+    // ----------------------------------
+    private void UpdateAnimator()
     {
-        if (!gravitySwitchPressed) return;
+        if (!_animator) return;
 
-        gravityDir = pendingGravityDir.normalized;
-
-        // align player instantly to new gravity
-        transform.rotation =
-            Quaternion.FromToRotation(transform.up, -gravityDir) * transform.rotation;
+        _animator.SetFloat("Speed", moveDirection.magnitude);
+        _animator.SetBool("Grounded", isGrounded);
     }
 
     private void OnDisable()
