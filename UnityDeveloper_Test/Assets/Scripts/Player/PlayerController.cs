@@ -166,6 +166,7 @@ public class PlayerController : MonoBehaviour
                     Quaternion.LookRotation(forward, -gravityDir);*/
 
         lastGravitySwitchTime = Time.time;
+        hologramPivot.gameObject.SetActive(false);
     }
 
     // ----------------------------------
@@ -205,9 +206,11 @@ public class PlayerController : MonoBehaviour
         if (rotateInput == Vector2.zero)
         {
             lastRotateInput = Vector2.zero;
+            // hologramPivot.gameObject.SetActive(false); (hides instantly)
             return;
         }
 
+        hologramPivot.gameObject.SetActive(true);
         lastRotateInput = rotateInput;
 
         if (rotateInput.x > 0)
