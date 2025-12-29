@@ -85,16 +85,6 @@ public class PlayerController : MonoBehaviour
         Vector3 forward =
             Vector3.ProjectOnPlane(transform.forward, gravityDir).normalized;
 
-/*        // SAFETY: fallback if forward collapses
-        if (forward.sqrMagnitude < 0.001f) 
-        {
-            Vector3 fallback = Vector3.forward;
-            if (Mathf.Abs(Vector3.Dot(fallback, gravityUp)) > 0.9f)
-                fallback = Vector3.right;
-
-            forward = Vector3.ProjectOnPlane(fallback, gravityDir).normalized;
-        }*/
-
         Vector3 right = Vector3.Cross(gravityUp, forward).normalized;
 
         moveDirection =
